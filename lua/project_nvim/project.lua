@@ -9,10 +9,27 @@ local M = {}
 M.attached_lsp = false
 M.last_project = nil
 
+---@param client lsp.Client
+---@param buf_name string
+local function lsp_get_buf_root(client, buf_name)
+  -- LSP clients can have multiple workspace folders
+  if client.workspace_folders then
+    for _, workspace_folder in pairs(client.workspace_folders) do
+      local folder_name = vim.uri_to_fname(workspace_folder.uri)
+      if folder_name and vim.startswith(buf_name, folder_name) then
+        return folder_name
+      end
+    end
+  end
+  -- Fall back to root_dir
+  return client.config.root_dir
+end
+
 function M.find_lsp_root()
   -- Get lsp client for current buffer
   -- Returns nil or string
   local buf_ft = vim.api.nvim_get_option_value('filetype', { buf = 0 })
+  local buf_name = vim.api.nvim_buf_get_name(0)
   local clients = vim.lsp.get_clients({ bufnr = 0 })
   if next(clients) == nil then
     return nil
@@ -26,24 +43,8 @@ function M.find_lsp_root()
       -- loop through all the workspace folders to find the correct worksapce folders
       -- for current_file
       if not vim.tbl_contains(config.options.ignore_lsp, client.name) then
-        for _, workspace in pairs(client.workspace_folders) do
-          local workspace_len = #workspace.name
-          -- if the #project_dir is longer than workspace_len that means that
-          -- project_dir is a sub project of workspace
-          if project_dir and #project_dir > workspace_len then
-            goto continue
-          end
-          -- if workspace_len is more than #current_file then there's no way
-          -- workspace can be the project workspace of current_file
-          if workspace_len > #current_file then
-            goto continue
-          end
-          if string.sub(current_file, 1, workspace_len) == workspace.name then
-            project_dir = workspace.name
-          end
-          ::continue::
-        end
-        return project_dir, client.name
+        local lsp_root = M._lsp_get_buf_root(client, buf_name)
+        return lsp_root, client.name
       end
     end
   end
