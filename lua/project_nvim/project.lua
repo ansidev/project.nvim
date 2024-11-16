@@ -12,8 +12,8 @@ M.last_project = nil
 function M.find_lsp_root()
   -- Get lsp client for current buffer
   -- Returns nil or string
-  local buf_ft = vim.api.nvim_buf_get_option(0, "filetype")
-  local clients = vim.lsp.buf_get_clients()
+  local buf_ft = vim.api.nvim_get_option_value('filetype', { buf = 0 })
+  local clients = vim.lsp.get_clients({ bufnr = 0 })
   if next(clients) == nil then
     return nil
   end
@@ -270,7 +270,7 @@ function M.init()
   ]])
 
   autocmds[#autocmds + 1] =
-    'autocmd VimLeavePre * lua require("project_nvim.utils.history").write_projects_to_history()'
+  'autocmd VimLeavePre * lua require("project_nvim.utils.history").write_projects_to_history()'
 
   vim.cmd([[augroup project_nvim
             au!
