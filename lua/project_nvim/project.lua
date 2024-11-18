@@ -18,11 +18,32 @@ function M.find_lsp_root()
     return nil
   end
 
+  local current_file = vim.api.nvim_buf_get_name(0)
+  local project_dir
   for _, client in pairs(clients) do
     local filetypes = client.config.filetypes
     if filetypes and vim.tbl_contains(filetypes, buf_ft) then
+      -- loop through all the workspace folders to find the correct worksapce folders
+      -- for current_file
       if not vim.tbl_contains(config.options.ignore_lsp, client.name) then
-        return client.config.root_dir, client.name
+        for _, workspace in pairs(client.workspace_folders) do
+          local workspace_len = #workspace.name
+          -- if the #project_dir is longer than workspace_len that means that
+          -- project_dir is a sub project of workspace
+          if project_dir and #project_dir > workspace_len then
+            goto continue
+          end
+          -- if workspace_len is more than #current_file then there's no way
+          -- workspace can be the project workspace of current_file
+          if workspace_len > #current_file then
+            goto continue
+          end
+          if string.sub(current_file, 1, workspace_len) == workspace.name then
+            project_dir = workspace.name
+          end
+          ::continue::
+        end
+        return project_dir, client.name
       end
     end
   end
