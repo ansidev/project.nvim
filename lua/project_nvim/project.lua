@@ -24,7 +24,7 @@ vim.api.nvim_create_autocmd("BufDelete", {
   end,
 })
 
----@param client lsp.Client
+---@param client vim.lsp.Client
 ---@param buf_name buf_name
 function M._lsp_get_buf_root(client, buf_name)
   local buf_file_path = buf_name_to_file_path_map[buf_name]
@@ -40,7 +40,6 @@ function M._lsp_get_buf_root(client, buf_name)
   if client.workspace_folders then
     for _, workspace_folder in pairs(client.workspace_folders) do
       local folder_name = vim.uri_to_fname(workspace_folder.uri)
-      -- buf_file_path = buf_file_path .. "/file"
       if folder_name and vim.startswith(buf_file_path, folder_name) then
         if #folder_name == #buf_file_path then
           return folder_name
@@ -273,7 +272,7 @@ function M.get_project_root()
 end
 
 function M.is_file()
-  local buf_type = vim.api.nvim_get_option_value('filetype', { buf = 0 })
+  local buf_type = vim.api.nvim_get_option_value('buftype', { buf = 0 })
 
   local whitelisted_buf_type = { "", "acwrite" }
   local is_in_whitelist = false
